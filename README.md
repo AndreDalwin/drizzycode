@@ -11,11 +11,14 @@ curl -fsSL https://raw.githubusercontent.com/AndreDalwin/drizzycode/main/install
 ## What it does
 
 1. **Installs OpenCode** if `opencode` is missing.
-2. **Installs oh-my-opencode** if not already present (via `npx` or `bunx`).
-3. **Prompts for config choice:**
+2. **Bootstraps Node.js and Bun** if needed so the plugin installer can run.
+3. **Installs oh-my-opencode** on every run.
+4. **Prompts for config choice:**
    - **Regular** - Uses Kimi/GLM models (default, free)
    - **OpenAI** - Uses GPT-5 models with variants (requires OpenAI API key)
-4. **Writes config files** to `~/.config/opencode/`:
+   - You can enter `1` or `Regular`
+   - You can enter `2` or `OpenAI`
+5. **Writes config files** to `~/.config/opencode/`:
    - `opencode.json` - Enables the oh-my-opencode plugin
    - `oh-my-opencode.json` - Your selected agent/category configuration
 
