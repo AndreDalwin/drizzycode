@@ -4,6 +4,8 @@ set -euo pipefail
 CONFIG_DIR="${HOME}/.config/opencode"
 TTY_DEVICE="/dev/tty"
 NVM_INSTALL_URL="https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh"
+OPEN_CODE_PATH_LINE='export PATH="$HOME/.opencode/bin:$PATH"'
+DRIZZYCODE_PATH_MARKER="# Added by drizzycode installer"
 
 log() {
   printf '%s\n' "$1"
@@ -42,6 +44,30 @@ refresh_runtime_paths() {
   fi
 }
 
+ensure_line_in_file() {
+  local file_path="$1"
+  local line="$2"
+
+  touch "$file_path"
+
+  if grep -Fqx "$line" "$file_path"; then
+    return
+  fi
+
+  printf '\n%s\n%s\n' "$DRIZZYCODE_PATH_MARKER" "$line" >> "$file_path"
+  log "Updated $file_path"
+}
+
+persist_opencode_path() {
+  ensure_line_in_file "$HOME/.zshrc" "$OPEN_CODE_PATH_LINE"
+  ensure_line_in_file "$HOME/.zprofile" "$OPEN_CODE_PATH_LINE"
+  ensure_line_in_file "$HOME/.bashrc" "$OPEN_CODE_PATH_LINE"
+  ensure_line_in_file "$HOME/.bash_profile" "$OPEN_CODE_PATH_LINE"
+  ensure_line_in_file "$HOME/.profile" "$OPEN_CODE_PATH_LINE"
+
+  log "Persisted OpenCode PATH for future shells."
+}
+
 backup_if_exists() {
   local target="$1"
 
@@ -61,6 +87,7 @@ install_opencode() {
   refresh_runtime_paths
 
   if command -v opencode >/dev/null 2>&1; then
+    persist_opencode_path
     log "OpenCode already installed: $(opencode --version)"
     return
   fi
@@ -80,6 +107,7 @@ install_opencode() {
     exit 1
   fi
 
+  persist_opencode_path
   log "Installed OpenCode: $(opencode --version)"
 }
 
@@ -159,36 +187,40 @@ install_oh_my_opencode() {
 }
 
 prompt_config_choice() {
-  if [[ ! -r "$TTY_DEVICE" ]] || [[ ! -w "$TTY_DEVICE" ]]; then
+  if ! exec 3<> "$TTY_DEVICE"; then
     printf '%s\n' "No interactive terminal detected. Defaulting to Regular config." >&2
     echo "regular"
     return
   fi
 
-  printf '\nSelect your oh-my-opencode configuration:\n' > "$TTY_DEVICE"
-  printf '  1) Regular - Uses Kimi/GLM models (default, free)\n' > "$TTY_DEVICE"
-  printf '  2) OpenAI - Uses GPT-5 models with variants (requires OpenAI API key)\n\n' > "$TTY_DEVICE"
-  printf "Type '1' or 'Regular', or type '2' or 'OpenAI', then press Enter.\n" > "$TTY_DEVICE"
+  printf '\nSelect your oh-my-opencode configuration:\n' >&3
+  printf '  1) Regular - Uses Kimi/GLM models (default, free)\n' >&3
+  printf '  2) OpenAI - Uses GPT-5 models with variants (requires OpenAI API key)\n\n' >&3
+  printf "Type '1' or 'Regular', or type '2' or 'OpenAI', then press Enter.\n" >&3
 
   local choice normalized_choice
   while true; do
-    printf 'Enter choice [1/2, Regular/OpenAI]: ' > "$TTY_DEVICE"
-    IFS= read -r choice < "$TTY_DEVICE" || true
+    printf 'Enter choice [1/2, Regular/OpenAI]: ' >&3
+    IFS= read -r choice <&3 || choice=""
     normalized_choice="$(printf '%s' "$choice" | tr '[:upper:]' '[:lower:]')"
 
     case "$normalized_choice" in
       2|openai)
-        printf 'Selected: OpenAI config\n' > "$TTY_DEVICE"
+        printf 'Selected: OpenAI config\n' >&3
+        exec 3>&-
+        exec 3<&-
         echo "openai"
         return
         ;;
       ""|1|regular)
-        printf 'Selected: Regular config\n' > "$TTY_DEVICE"
+        printf 'Selected: Regular config\n' >&3
+        exec 3>&-
+        exec 3<&-
         echo "regular"
         return
         ;;
       *)
-        printf "Please enter 1, 2, Regular, or OpenAI.\n" > "$TTY_DEVICE"
+        printf "Please enter 1, 2, Regular, or OpenAI.\n" >&3
         ;;
     esac
   done
@@ -262,6 +294,9 @@ main() {
   log "  Then enter your API key:"
   log "    - Kimi API key (for Regular config)"
   log "    - OR OpenAI API key (for OpenAI config)"
+  log ""
+  log "If `opencode` is not found in this terminal yet, open a new terminal first."
+  log "You can also reload your shell profile manually."
   log ""
   log "Start OpenCode anytime with: opencode"
   log "========================================"
