@@ -81,6 +81,7 @@ prompt_config_choice() {
   log "  1) Regular - Uses Kimi/GLM models (default, free)"
   log "  2) OpenAI - Uses GPT-5 models with variants (requires OpenAI API key)"
   log ""
+  log "Type '1' for Regular or '2' for OpenAI, then press Enter"
   
   local choice
   read -r -p "Enter choice [1/2]: " choice || true
@@ -146,7 +147,18 @@ main() {
   install_drizzycode_config
 
   log ""
-  log "Done. Start OpenCode with: opencode"
+  log "========================================"
+  log "Setup complete!"
+  log ""
+  log "Next step:"
+  log "  Run: opencode auth login"
+  log ""
+  log "  Then enter your API key:"
+  log "    - Kimi API key (for Regular config)"
+  log "    - OR OpenAI API key (for OpenAI config)"
+  log ""
+  log "Start OpenCode anytime with: opencode"
+  log "========================================"
 }
 
 main "$@"
